@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk, messagebox, filedialog
 import yt_dlp
 from threading import Thread
+import os
 
 class VideoDownloaderGUI:
     def __init__(self, root):
@@ -18,6 +19,17 @@ class VideoDownloaderGUI:
         self.url_entry.pack(side=tk.LEFT, padx=5)
         
         ttk.Button(url_frame, text="Get Formats", command=self.fetch_formats).pack(side=tk.LEFT, padx=5)
+        
+        # Download Location
+        location_frame = ttk.Frame(root, padding="10")
+        location_frame.pack(fill=tk.X)
+        
+        ttk.Label(location_frame, text="Save to:").pack(side=tk.LEFT)
+        self.location_entry = ttk.Entry(location_frame, width=50)
+        self.location_entry.pack(side=tk.LEFT, padx=5)
+        self.location_entry.insert(0, os.path.expanduser("~/Downloads"))  # Default to Downloads folder
+        
+        ttk.Button(location_frame, text="Browse", command=self.browse_location).pack(side=tk.LEFT, padx=5)
         
         # Formats Display
         formats_frame = ttk.Frame(root, padding="10")
@@ -106,9 +118,10 @@ class VideoDownloaderGUI:
         
         def download():
             try:
+                download_path = os.path.join(self.location_entry.get(), '%(title)s.%(ext)s')
                 ydl_opts = {
                     'format': format_id,
-                    'outtmpl': '%(title)s.%(ext)s',
+                    'outtmpl': download_path,
                     'progress_hooks': [self.progress_hook],
                     'retries': 10,  # Number of times to retry
                     'fragment_retries': 10,  # Number of times to retry a fragment
@@ -140,6 +153,15 @@ class VideoDownloaderGUI:
             self.download_btn.configure(state=tk.NORMAL)
         else:
             self.download_btn.configure(state=tk.DISABLED)
+
+    def browse_location(self):
+        directory = filedialog.askdirectory(
+            initialdir=self.location_entry.get(),
+            title="Select Download Location"
+        )
+        if directory:
+            self.location_entry.delete(0, tk.END)
+            self.location_entry.insert(0, directory)
 
     def progress_hook(self, d):
         if d['status'] == 'downloading':
