@@ -118,7 +118,8 @@ class VideoDownloaderGUI:
         
         def download():
             try:
-                download_path = os.path.join(self.location_entry.get(), '%(title)s.%(ext)s')
+                download_path = os.path.join(self.location_entry.get(), '%(title)s.%(ext)s')                # Ensure the filename is unique by including video ID
+                download_path = os.path.join(self.location_entry.get(), '%(title)s_%(id)s.%(ext)s')
                 ydl_opts = {
                     'format': format_id,
                     'outtmpl': download_path,
@@ -127,6 +128,9 @@ class VideoDownloaderGUI:
                     'fragment_retries': 10,  # Number of times to retry a fragment
                     'continuedl': True,  # Force resume of partially downloaded files
                     'socket_timeout': 30,  # Timeout for network operations
+                    'windowsfilenames': True,  # Ensure Windows-compatible filenames
+                    'ignoreerrors': True,  # Continue on download errors
+                    'no_overwrites': True  # Don't overwrite existing files
                 }
                 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -168,10 +172,28 @@ class VideoDownloaderGUI:
             try:
                 total = d.get('total_bytes', 0)
                 downloaded = d.get('downloaded_bytes', 0)
+                speed = d.get('speed', 0)
+                eta = d.get('eta', 0)
+                
+                status_text = []
+                
+                # Progress percentage
                 if total > 0:
                     percentage = (downloaded / total) * 100
                     self.progress['value'] = percentage
-                    self.status_label.configure(text=f"{percentage:.1f}%")
+                    status_text.append(f"{percentage:.1f}%")
+                
+                # Download speed                if speed:
+                    speed = speed / 1024  # Convert to KB/s
+                    status_text.append(f"{speed:.1f} KB/s")
+                
+                # ETA
+                if eta:
+                    minutes = eta // 60
+                    seconds = eta % 60
+                    status_text.append(f"ETA: {minutes}:{seconds:02d}")
+                
+                self.status_label.configure(text=" | ".join(status_text))
             except:
                 pass
 

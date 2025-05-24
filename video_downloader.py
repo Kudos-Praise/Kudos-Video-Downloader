@@ -28,13 +28,43 @@ def list_formats(url):
             return False
 
 def download_video(url, format_id='best'):
+    def progress_hook(d):
+        if d['status'] == 'downloading':
+            try:
+                speed = d.get('speed', 0)
+                eta = d.get('eta', 0)
+                downloaded = d.get('downloaded_bytes', 0)
+                total = d.get('total_bytes', 0)
+                
+                if speed:
+                    speed = speed / 1024  # Convert to KB/s
+                    speed_str = f"{speed:.1f} KB/s"
+                else:
+                    speed_str = "N/A"
+                
+                if eta:
+                    eta_str = f"{eta//60}:{eta%60:02d}"
+                else:
+                    eta_str = "N/A"
+                
+                if total:
+                    percent = downloaded / total * 100
+                    print(f"\rProgress: {percent:.1f}% | Speed: {speed_str} | ETA: {eta_str}", end="")
+            except:
+                pass
+        elif d['status'] == 'finished':
+            print("\nDownload completed!")
+
     ydl_opts = {
         'format': format_id,
-        'outtmpl': '%(title)s.%(ext)s',
+        'outtmpl': '%(title)s_%(id)s.%(ext)s',  # Add video ID to filename to avoid conflicts
         'retries': 10,  # Number of times to retry
         'fragment_retries': 10,  # Number of times to retry a fragment
         'continuedl': True,  # Force resume of partially downloaded files
         'socket_timeout': 30,  # Timeout for network operations
+        'progress_hooks': [progress_hook],
+        'windowsfilenames': True,  # Ensure Windows-compatible filenames
+        'ignoreerrors': True  # Continue on download errors
     }
     
     try:
